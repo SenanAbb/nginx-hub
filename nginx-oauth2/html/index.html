@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>ENO Data Lake - Portal de Servicios</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --color-primary: #4d7c0f;
+            --color-primary-hover: #3f6212;
+            --color-primary-light: rgba(77, 124, 15, 0.08);
+            --color-bg: #f5f5f4;
+            --color-surface: #ffffff;
+            --color-surface-hover: #fafaf9;
+            --color-border: #e7e5e4;
+            --color-border-hover: #d6d3d1;
+            --color-text: #1c1917;
+            --color-text-muted: #57534e;
+            --color-text-subtle: #a8a29e;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --radius: 10px;
+            --radius-sm: 6px;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+            --transition: 150ms ease;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            line-height: 1.5;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Navigation */
+        .nav {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .nav-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-logo {
+            width: 32px;
+            height: 32px;
+            background: var(--color-primary);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.02em;
+        }
+
+        .nav-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text);
+            letter-spacing: -0.01em;
+        }
+
+        .nav-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-info {
+            text-align: right;
+            display: none;
+        }
+
+        @media (min-width: 640px) {
+            .user-info {
+                display: block;
+            }
+        }
+
+        .user-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--color-text);
+        }
+
+        .user-email {
+            font-size: 11px;
+            color: var(--color-text-muted);
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--color-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-sm);
+            color: var(--color-text-muted);
+            text-decoration: none;
+            transition: all var(--transition);
+        }
+
+        .logout-btn:hover {
+            background: rgba(220, 38, 38, 0.08);
+            color: #dc2626;
+        }
+
+        .logout-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Main Content */
+        .main {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px 24px 64px;
+        }
+
+        .header {
+            margin-bottom: 32px;
+        }
+
+        .header-title {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--color-text);
+            letter-spacing: -0.02em;
+            margin-bottom: 6px;
+        }
+
+        .header-subtitle {
+            font-size: 14px;
+            color: var(--color-text-muted);
+        }
+
+        /* Service Grid */
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(1, 1fr);
+            gap: 12px;
+        }
+
+        @media (min-width: 640px) {
+            .services-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .services-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        /* Service Card */
+        .service-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius);
+            padding: 20px;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            transition: all var(--transition);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .service-card:hover {
+            border-color: var(--color-primary);
+            box-shadow: var(--shadow);
+        }
+
+        .service-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-sm);
+            background: var(--color-primary-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 14px;
+        }
+
+        .service-icon svg {
+            width: 18px;
+            height: 18px;
+            color: var(--color-primary);
+        }
+
+        .service-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 4px;
+        }
+
+        .service-description {
+            font-size: 13px;
+            color: var(--color-text-muted);
+            line-height: 1.5;
+            margin-bottom: 14px;
+            flex-grow: 1;
+        }
+
+        .service-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .service-tag {
+            font-size: 10px;
+            font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+            color: var(--color-text-subtle);
+            background: var(--color-bg);
+            padding: 3px 7px;
+            border-radius: 4px;
+            border: 1px solid var(--color-border);
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 48px;
+            padding-top: 20px;
+            border-top: 1px solid var(--color-border);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+        }
+
+        @media (min-width: 640px) {
+            .footer {
+                flex-direction: row;
+                justify-content: space-between;
+            }
+        }
+
+        .footer-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--color-primary);
+            border-radius: 50%;
+        }
+
+        .footer-text {
+            font-size: 12px;
+            color: var(--color-text-muted);
+        }
+
+        .footer-copyright {
+            font-size: 12px;
+            color: var(--color-text-subtle);
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="nav">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <div class="nav-logo">DL</div>
+                <span class="nav-title">ENO Data Lake</span>
+            </div>
+            <div class="nav-user">
+                <div class="user-info">
+                    <div class="user-name" id="userName">Cargando...</div>
+                    <div class="user-email" id="userEmail"></div>
+                </div>
+                <div class="user-avatar" id="userAvatar">U</div>
+                <a href="/logout" class="logout-btn" title="Cerrar sesion">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main">
+        <header class="header">
+            <h1 class="header-title">Portal de Servicios</h1>
+            <p class="header-subtitle">Accede y gestiona las herramientas de tu infraestructura de datos</p>
+        </header>
+
+        <div class="services-grid">
+            <!-- Ambari -->
+            <a class="service-card" href="https://srv-enodl-des-03.larioja.org:445/" target="_blank">
+                <div class="service-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+                    </svg>
+                </div>
+                <h3 class="service-title">Ambari</h3>
+                <p class="service-description">Gestion y monitorizacion del cluster Hadoop. Administra servicios y visualiza metricas.</p>
+                <div class="service-meta">
+                    <span class="service-tag">des-03:445</span>
+                    <span class="service-tag">des-01:9090</span>
+                </div>
+            </a>
+
+            <!-- Ranger -->
+            <a class="service-card" href="https://srv-enodl-des-03.larioja.org:446/" target="_blank">
+                <div class="service-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                    </svg>
+                </div>
+                <h3 class="service-title">Ranger</h3>
+                <p class="service-description">Control de acceso y politicas de seguridad. Gestiona permisos y auditoria de datos.</p>
+                <div class="service-meta">
+                    <span class="service-tag">des-03:446</span>
+                    <span class="service-tag">des-01:6080</span>
+                </div>
+            </a>
+
+            <!-- Atlas -->
+            <a class="service-card" href="https://srv-enodl-des-02.larioja.org:21000" target="_blank">
+                <div class="service-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
+                    </svg>
+                </div>
+                <h3 class="service-title">Atlas</h3>
+                <p class="service-description">Gobernanza de datos y gestion de metadatos. Catalogo de datos, linaje y clasificacion.</p>
+                <div class="service-meta">
+                    <span class="service-tag">des-02:21000</span>
+                </div>
+            </a>
+
+            <!-- Hue -->
+            <a class="service-card" href="https://srv-enodl-des-03.larioja.org:447/" target="_blank">
+                <div class="service-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0112 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25m-17.25 0h7.5c.621 0 1.125.504 1.125 1.125M3.375 8.25c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m17.25-3.75h-7.5c-.621 0-1.125.504-1.125 1.125m8.625-1.125c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M12 10.875v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125M13.125 12h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125M20.625 12c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5M12 14.625v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 14.625c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125m0 1.5v-1.5m0 0c0-.621.504-1.125 1.125-1.125m0 0h7.5" />
+                    </svg>
+                </div>
+                <h3 class="service-title">Hue</h3>
+                <p class="service-description">Interfaz web para Hadoop. Editor SQL, navegador de archivos HDFS y mas.</p>
+                <div class="service-meta">
+                    <span class="service-tag">des-03:447</span>
+                </div>
+            </a>
+
+            <!-- Zeppelin -->
+            <a class="service-card" href="https://srv-enodl-des-03.larioja.org:9995" target="_blank">
+                <div class="service-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z" />
+                    </svg>
+                </div>
+                <h3 class="service-title">Zeppelin</h3>
+                <p class="service-description">Notebooks interactivos para analisis de datos. Soporta Spark, SQL y Python.</p>
+                <div class="service-meta">
+                    <span class="service-tag">des-03:9995</span>
+                </div>
+            </a>
+
+            <!-- Keycloak Admin -->
+            <a class="service-card" href="/auth/admin">
+                <div class="service-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+                    </svg>
+                </div>
+                <h3 class="service-title">Keycloak Admin</h3>
+                <p class="service-description">Administracion de identidades y accesos. Gestiona usuarios, roles y SSO.</p>
+                <div class="service-meta">
+                    <span class="service-tag">des-03:8443</span>
+                </div>
+            </a>
+
+            <!-- LDAP Admin UI -->
+            <a class="service-card" href="https://srv-enodl-des-03.larioja.org:400/" target="_blank">
+                <div class="service-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 6.75A2.25 2.25 0 016.75 4.5h10.5A2.25 2.25 0 0119.5 6.75v10.5A2.25 2.25 0 0117.25 19.5H6.75A2.25 2.25 0 014.5 17.25V6.75zm3.75 1.5h7.5m-7.5 4.5h7.5m-7.5 4.5h4.5" />
+                    </svg>
+                </div>
+                <h3 class="service-title">LDAP Admin</h3>
+                <p class="service-description">Panel de administración para usuarios y grupos en LDAP.</p>
+                <div class="service-meta">
+                    <span class="service-tag">des-03:400</span>
+                </div>
+            </a>
+        </div>
+
+        <footer class="footer">
+            <div class="footer-status">
+                <span class="status-dot"></span>
+                <span class="footer-text">ENO Data Lake Portal v3.0</span>
+            </div>
+            <span class="footer-copyright">2025 ENO Data Lake - La Rioja</span>
+        </footer>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            window.addEventListener('pageshow', function (event) {
+                if (event && event.persisted) {
+                    window.location.reload();
+                }
+            });
+
+            const userEmailElement = document.getElementById('userEmail');
+            const userNameElement = document.getElementById('userName');
+            const userAvatarElement = document.getElementById('userAvatar');
+
+            const logoutLink = document.querySelector('a.logout-btn[href="/logout"]');
+            if (logoutLink) {
+                logoutLink.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    window.location.href = '/logout?ts=' + Date.now();
+                });
+            }
+
+            fetch('/oauth2/userinfo', {
+                credentials: 'include'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    const email = data.email || data.upn || data.preferred_username;
+                    const name = data.name || data.given_name || data.preferred_username || 'Usuario';
+                    const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+
+                    if (userNameElement) {
+                        userNameElement.textContent = name;
+                    }
+                    if (userEmailElement) {
+                        userEmailElement.textContent = email || '';
+                    }
+                    if (userAvatarElement) {
+                        userAvatarElement.textContent = initials || 'U';
+                    }
+                })
+                .catch(() => {
+                    if (userNameElement) {
+                        userNameElement.textContent = 'Usuario';
+                    }
+                });
+        });
+    </script>
+</body>
+
+</html>

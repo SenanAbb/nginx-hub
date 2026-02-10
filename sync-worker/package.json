@@ -1,0 +1,12 @@
+{
+  "name": "sync-worker",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "start": "node ./worker.js"
+  },
+  "dependencies": {
+    "redis": "^4.7.1"
+  }
+}

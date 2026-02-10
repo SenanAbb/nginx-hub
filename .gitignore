@@ -1,0 +1,49 @@
+# dependencies & package managers
+node_modules/
+**/node_modules/
+.pnp/
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+.pnpm-store/
+.npm/
+
+# build outputs
+dist/
+build/
+out/
+.next/
+.nuxt/
+.vercel/
+.angular/
+.turbo/
+.cache/
+.parcel-cache/
+coverage/
+**/coverage/
+
+# env & secrets
+.env
+.env.*
+*.env
+*.pem
+*.key
+
+# logs & diagnostics
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# editor & os cruft
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

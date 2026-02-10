@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<topology>
+    <gateway>
+        <!-- Seguridad web básica -->
+        <provider>
+            <role>webappsec</role>
+            <name>WebAppSec</name>
+            <enabled>true</enabled>
+            <param>
+                <name>xframe.options.enabled</name>
+                <value>true</value>
+            </param>
+        </provider>
+        <!-- Federación OIDC con Keycloak vía pac4j -->
+        <provider>
+            <role>federation</role>
+            <name>pac4j</name>
+            <enabled>true</enabled>
+            <!-- URL pública de callback de KnoxSSO (AJUSTA host/puerto si es distinto) -->
+            <param>
+                <name>pac4j.callbackUrl</name>
+                <value>https://srv-enodl-des-03.larioja.org:444/knoxsso/api/v1/websso</value>
+            </param>
+            <!-- Tipo de cliente pac4j -->
+            <param>
+                <name>clientName</name>
+                <value>OidcClient</value>
+            </param>
+            <!-- Cliente OIDC en Keycloak (realm enodl-poc-des) -->
+            <param>
+                <name>oidc.id</name>
+                <value>knox-des</value>
+            </param>
+            <param>
+                <name>oidc.secret</name>
+                <value>ZsYko6ATcLBjZBCNBppw3JV5TsSSZ9Qo</value>
+            </param>
+            <!-- Discovery de Keycloak DES -->
+            <param>
+                <name>oidc.discoveryUri</name>
+                <value>http://keycloak:8080/realms/enodl-poc-des/.well-known/openid-configuration</value>
+            </param>
+            <param>
+                <name>oidc.preferredJwsAlgorithm</name>
+                <value>RS256</value>
+            </param>
+            <param>
+                <name>pac4j.id_attribute</name>
+                <value>preferred_username</value>
+            </param>
+            <param>
+                <name>oidc.scope</name>
+                <value>openid profile email</value>
+            </param>
+            <!-- Mapear el claim de username de Keycloak al principal de Knox -->
+            <param>
+                <name>oidc.principalClaimName</name>
+                <value>preferred_username</value>
+            </param>
+        </provider>
+        <!-- Identity assertion por defecto -->
+        <provider>
+            <role>identity-assertion</role>
+            <name>Default</name>
+            <enabled>true</enabled>
+        </provider>
+        <!-- Hostmap de ejemplo (puedes dejarlo tal cual o limpiarlo) -->
+        <provider>
+            <role>hostmap</role>
+            <name>static</name>
+            <enabled>true</enabled>
+            <param>
+                <name>localhost</name>
+                <value>sandbox,sandbox.hortonworks.com</value>
+            </param>
+        </provider>
+    </gateway>
+    <!-- Aplicación de login propia de KnoxSSO -->
+    <application>
+        <name>knoxauth</name>
+    </application>
+    <!-- ÚNICO servicio KNOXSSO -->
+    <service>
+    <role>KNOXSSO</role>
+    <param>
+        <name>knoxsso.cookie.secure.only</name>
+        <value>true</value>
+    </param>
+    <!-- Nombre de la cookie SSO -->
+    <param>
+        <name>knoxsso.cookie.name</name>
+        <value>hadoop-jwt</value>
+    </param>
+<!-- DOMINIO de la cookie para que funcione entre hosts -->
+    <param>
+        <name>knoxsso.cookie.domain</name>
+        <value>.larioja.org</value>
+    </param>
+    <!-- Path para el que será válida la cookie: que cubra todas las topologías -->
+    <param>
+        <name>knoxsso.cookie.path</name>
+        <value>/</value>
+    </param>
+<!--<param>
+        <name>knoxsso.cookie.sameSite</name>
+        <value>Lax</value>
+    </param>-->
+    <param>
+        <name>knoxsso.token.ttl</name>
+        <value>3600000</value>
+    </param>
+    <param>
+        <name>knoxsso.redirect.whitelist.regex</name>
+        <value>^https:\/\/srv-enodl-des-03\.larioja\.org(:444|:445|:446|:447)?\/.*$</value>
+    </param>
+</service>
+</topology>
+
+
