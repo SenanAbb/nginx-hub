@@ -101,6 +101,7 @@ export default async function RootLayout({
             email={auth.email}
             ldapHost={ldapHost}
             ldapConnected={ldapConnected}
+            isAuthorized={auth.isAuthorized}
           />
           <main className="flex-1 overflow-y-auto">{children}</main>
         </div>

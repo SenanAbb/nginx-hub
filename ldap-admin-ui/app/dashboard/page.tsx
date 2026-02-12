@@ -11,7 +11,6 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { SyncControls } from "@/components/admin/sync/sync-controls";
 import { resolveAuthWithLdapFallback } from "@/lib/auth";
 import { fetchGroups, fetchKpis, fetchUsers } from "@/lib/ldap";
 
@@ -103,7 +102,6 @@ export default async function DashboardPage() {
             <Activity className="h-3 w-3" />
             Actualizado {lastUpdated}
           </Badge>
-          {auth.isAuthorized ? <SyncControls /> : null}
         </div>
       </header>
 

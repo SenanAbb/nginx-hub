@@ -2,12 +2,6 @@
 <topology>
   <gateway>
     <provider>
-      <role>webappsec</role>
-      <name>WebAppSec</name>
-      <enabled>true</enabled>
-    </provider>
-
-    <provider>
       <role>federation</role>
       <name>SSOCookieProvider</name>
       <enabled>true</enabled>

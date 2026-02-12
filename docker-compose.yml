@@ -169,8 +169,13 @@ services:
     hostname: knox
     environment:
       JAVA_TOOL_OPTIONS: "-Dgateway.hadoop.kerberos.secured=true"
+      KNOX_GATEWAY_DBG_OPTS: "-Dgateway.hadoop.kerberos.secured=true"
     volumes:
       - ./knox/topologies:/opt/knox-1.6.1/conf/topologies:ro
+      - ./knox/conf/gateway-site.xml:/opt/knox-1.6.1/conf/gateway-site.xml:ro
+      - ./knox/conf/krb5.conf:/opt/knox-1.6.1/conf/krb5.conf:ro
+      - ./knox/conf/krb5JAASLogin.conf:/opt/knox-1.6.1/conf/krb5JAASLogin.conf:ro
+      - ./knox/data/security:/opt/knox-1.6.1/data/security
     extra_hosts:
       - "host.docker.internal:host-gateway"
       - "srv-enodl-des-03.larioja.org:host-gateway"
@@ -229,6 +234,9 @@ services:
       SYNC_KEY_DIRTY_HUE: "sync:dirty:hue"
       SYNC_KEY_HUE_DIRTY_GROUPS: "sync:hue:groups"
       SYNC_HUE_COMMAND_PREFIX: "sudo -n -u hue /usr/odp/current/hue-server/build/env/bin/hue import_ldap_group --import-members"
+
+      SYNC_HUE_SUPERUSER_RECONCILE_ENABLED: "1"
+      SYNC_HUE_SUPERUSER_GROUP: "hue_admin"
 
       SYNC_AMBARI_COMMAND: "sudo -n /sbin/ambari-server sync-ldap --all"
       SYNC_AMBARI_ADMIN_USER: "admin"

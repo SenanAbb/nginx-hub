@@ -5,12 +5,14 @@ import { usePathname } from "next/navigation";
 import { Database, FolderTree, LayoutDashboard, LogOut, Settings, Users } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { SyncSidebarControls } from "@/components/admin/sync/sync-controls";
 
 type SidebarProps = {
   user?: string;
   email?: string;
   ldapHost?: string;
   ldapConnected?: boolean;
+  isAuthorized?: boolean;
 };
 
 const navigation = [
@@ -31,7 +33,7 @@ const getInitials = (value?: string) => {
     .toUpperCase();
 };
 
-export function Sidebar({ user, email, ldapHost, ldapConnected }: SidebarProps) {
+export function Sidebar({ user, email, ldapHost, ldapConnected, isAuthorized }: SidebarProps) {
   const pathname = usePathname();
   const displayName = user ?? "Usuario";
   const displayEmail = email ?? "";
@@ -51,7 +53,7 @@ export function Sidebar({ user, email, ldapHost, ldapConnected }: SidebarProps) 
         </div>
       </div>
 
-      <nav className="flex-1 space-y-1 p-4">
+      <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
         <p className="mb-3 px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Gestión
         </p>
@@ -73,6 +75,17 @@ export function Sidebar({ user, email, ldapHost, ldapConnected }: SidebarProps) 
             </Link>
           );
         })}
+
+        {isAuthorized ? (
+          <div className="mt-6 border-t border-border pt-4">
+            <p className="mb-3 px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Sincronización
+            </p>
+            <div className="px-2">
+              <SyncSidebarControls />
+            </div>
+          </div>
+        ) : null}
       </nav>
 
       <div className="border-t border-border p-4">

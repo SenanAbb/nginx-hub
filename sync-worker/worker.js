@@ -150,6 +150,9 @@ const HUE_COMMAND_PREFIX =
   process.env.SYNC_HUE_COMMAND_PREFIX ??
   "sudo -n -u hue /usr/odp/current/hue-server/build/env/bin/hue import_ldap_group --import-members";
 
+const HUE_SUPERUSER_RECONCILE_ENABLED = (process.env.SYNC_HUE_SUPERUSER_RECONCILE_ENABLED ?? "1") === "1";
+const HUE_SUPERUSER_GROUP = (process.env.SYNC_HUE_SUPERUSER_GROUP ?? "hue_admin").trim();
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -194,6 +197,59 @@ async function runHueGroupSync(groupCn) {
 
   const cmd = `sh -lc ${shQuote(`${HUE_COMMAND_PREFIX} ${shQuote(cn)}`)}`;
   logInfo("hue", "sync group", { cycleId, host: HUE_HOST, groupCn: cn, commandPrefix: HUE_COMMAND_PREFIX });
+  return runSsh(HUE_HOST, cmd);
+}
+
+async function runHueSuperuserReconcile() {
+  if (!HUE_SUPERUSER_RECONCILE_ENABLED) {
+    logDebug("hue", "superuser reconcile disabled", { cycleId, enabled: HUE_SUPERUSER_RECONCILE_ENABLED });
+    return { stdout: "", stderr: "" };
+  }
+
+  const groupName = String(HUE_SUPERUSER_GROUP ?? "").trim();
+  if (!groupName) {
+    logDebug("hue", "superuser reconcile skipped (empty group)", { cycleId });
+    return { stdout: "", stderr: "" };
+  }
+
+  // Reconcile Hue superuser flag based on membership of a Hue group.
+  // Only affects EXTERNAL users, so local/manual superusers are not touched.
+  const py = `
+from django.contrib.auth.models import User, Group
+from useradmin.models import UserProfile
+
+GROUP = ${JSON.stringify(groupName)}
+
+g = Group.objects.get(name=GROUP)
+desired = set(g.user_set.values_list('username', flat=True))
+
+promoted = 0
+for u in User.objects.filter(username__in=desired):
+    if not u.is_superuser or not u.is_staff:
+        u.is_superuser = True
+        u.is_staff = True
+        u.save(update_fields=['is_superuser', 'is_staff'])
+        promoted += 1
+
+demoted = 0
+qs = User.objects.filter(
+    is_superuser=True,
+    userprofile__creation_method=UserProfile.CreationMethod.EXTERNAL.name,
+).exclude(username__in=desired)
+
+for u in qs:
+    u.is_superuser = False
+    u.is_staff = False
+    u.save(update_fields=['is_superuser', 'is_staff'])
+    demoted += 1
+
+print(f"hue_superuser_reconcile group={GROUP} desired={len(desired)} promoted={promoted} demoted={demoted}")
+`;
+
+  const cmd = `sh -lc ${shQuote(
+    `sudo -n -u hue /usr/odp/current/hue-server/build/env/bin/hue shell <<'PY'\n${py}\nPY`
+  )}`;
+  logInfo("hue", "reconcile superusers", { cycleId, host: HUE_HOST, groupName });
   return runSsh(HUE_HOST, cmd);
 }
 
@@ -284,6 +340,16 @@ async function runOnce(client) {
     client.get(KEY_DIRTY_HUE),
   ]);
 
+  logDebug("worker", "dirty flags read", {
+    cycleId,
+    keyAmbari: KEY_DIRTY_AMBARI,
+    keyRanger: KEY_DIRTY_RANGER,
+    keyHue: KEY_DIRTY_HUE,
+    dirtyAmbari,
+    dirtyRanger,
+    dirtyHue,
+  });
+
   const shouldAmbari = dirtyAmbari === "1";
   const shouldRanger = dirtyRanger === "1";
   const shouldHue = dirtyHue === "1";
@@ -299,6 +365,7 @@ async function runOnce(client) {
   }
 
   if (!shouldAmbari && !shouldRanger && !shouldHue) {
+    logDebug("worker", "no dirty flags; idle", { cycleId });
     return;
   }
 
@@ -442,6 +509,10 @@ async function runOnce(client) {
 
         for (const cn of uniqueGroups) {
           await runHueGroupSync(cn);
+        }
+
+        if (uniqueGroups.includes(HUE_SUPERUSER_GROUP)) {
+          await runHueSuperuserReconcile();
         }
 
         await client.del(KEY_DIRTY_HUE);
