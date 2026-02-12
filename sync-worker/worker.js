@@ -195,7 +195,7 @@ async function runHueGroupSync(groupCn) {
     return { stdout: "", stderr: "" };
   }
 
-  const cmd = `sh -lc ${shQuote(`${HUE_COMMAND_PREFIX} ${shQuote(cn)}`)}`;
+  const cmd = `sh -lc ${shQuote(`cd /tmp && ${HUE_COMMAND_PREFIX} ${shQuote(cn)}`)}`;
   logInfo("hue", "sync group", { cycleId, host: HUE_HOST, groupCn: cn, commandPrefix: HUE_COMMAND_PREFIX });
   return runSsh(HUE_HOST, cmd);
 }
@@ -247,7 +247,7 @@ print(f"hue_superuser_reconcile group={GROUP} desired={len(desired)} promoted={p
 `;
 
   const cmd = `sh -lc ${shQuote(
-    `sudo -n -u hue /usr/odp/current/hue-server/build/env/bin/hue shell <<'PY'\n${py}\nPY`
+    `cd /tmp && sudo -n -u hue /usr/odp/current/hue-server/build/env/bin/hue shell <<'PY'\n${py}\nPY`
   )}`;
   logInfo("hue", "reconcile superusers", { cycleId, host: HUE_HOST, groupName });
   return runSsh(HUE_HOST, cmd);

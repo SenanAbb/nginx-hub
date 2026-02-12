@@ -18,15 +18,32 @@ export const KEY_DEBOUNCE_UNTIL = "sync:debounce:until";
 export const KEY_RANGER_FORCE_DELETE_USERS = "sync:ranger:force_delete_users";
 export const KEY_HUE_DIRTY_GROUPS = "sync:hue:groups";
 
+const REDIS_CONNECT_TIMEOUT_MS = 5_000;
+
 let clientPromise: Promise<RedisClientType> | undefined;
+
+async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label}: timeout after ${ms}ms`)), ms);
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    clearTimeout(timer!);
+  }
+}
 
 async function getRedisClient(config: RedisConfig): Promise<RedisClientType> {
   if (!clientPromise) {
     const client: RedisClientType = createClient({ url: config.url });
     clientPromise = (async () => {
-      await client.connect();
+      await withTimeout(client.connect(), REDIS_CONNECT_TIMEOUT_MS, "Redis connect");
       return client;
     })();
+    clientPromise.catch(() => {
+      clientPromise = undefined;
+    });
   }
   return clientPromise;
 }
