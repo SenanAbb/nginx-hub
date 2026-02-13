@@ -11,6 +11,68 @@ function ts() {
   return new Date().toISOString();
 }
 
+async function fetchHueExternalUsers() {
+  const py = `
+from django.contrib.auth.models import User
+from useradmin.models import UserProfile
+import json
+
+users = list(User.objects.filter(userprofile__creation_method=UserProfile.CreationMethod.EXTERNAL.name)
+             .values_list('username', flat=True))
+print(json.dumps(users))
+`;
+
+  const cmd = `sh -lc ${shQuote(
+    `cd /tmp && sudo -n -u hue /usr/odp/current/hue-server/build/env/bin/hue shell <<'PY'\n${py}\nPY`,
+  )}`;
+
+  logDebug("hue", "fetch external users", { cycleId, host: HUE_HOST });
+
+  const res = await runSsh(HUE_HOST, cmd);
+  const raw = String(res.stdout ?? "").trim();
+  if (!raw) return [];
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((u) => String(u ?? "").trim()).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+async function ensureHdfsHomeDir(username) {
+  const u = sanitizeUsername(username);
+  if (!u) {
+    logDebug("hdfs", "skip: invalid username (cannot ensure HDFS home)", { cycleId, username });
+    return { ensured: false, created: false };
+  }
+
+  const home = `/user/${u}`;
+  const testCmd = `sh -lc ${shQuote(
+    `if ${HDFS_COMMAND_PREFIX} -test -d ${shQuote(home)}; then echo EXISTS; else echo MISSING; fi`,
+  )}`;
+
+  logDebug("hdfs", "check: HDFS home exists?", { cycleId, host: HDFS_HOST, user: u, home });
+  const testRes = await runSsh(HDFS_HOST, testCmd);
+  const status = String(testRes.stdout ?? "").trim();
+
+  if (status === "EXISTS") {
+    logDebug("hdfs", "ok: HDFS home already exists", { cycleId, host: HDFS_HOST, user: u, home });
+    return { ensured: true, created: false };
+  }
+
+  const createCmd = `sh -lc ${shQuote(
+    `${HDFS_COMMAND_PREFIX} -mkdir -p ${shQuote(home)} && ` +
+      `${HDFS_COMMAND_PREFIX} -chown ${shQuote(`${u}:${u}`)} ${shQuote(home)}`,
+  )}`;
+
+  logInfo("hdfs", "action: create missing HDFS home", { cycleId, host: HDFS_HOST, user: u, home });
+  await runSsh(HDFS_HOST, createCmd);
+  logOk("hdfs", "ok: HDFS home created", { cycleId, host: HDFS_HOST, user: u, home });
+  return { ensured: true, created: true };
+}
+
 function fmtMeta(meta) {
   if (!meta) return "";
   try {
@@ -120,6 +182,11 @@ const AMBARI_HOST = process.env.SYNC_AMBARI_HOST ?? "srv-enodl-des-01";
 const RANGER_HOST = process.env.SYNC_RANGER_HOST ?? "srv-enodl-des-02";
 const HUE_HOST = process.env.SYNC_HUE_HOST ?? "srv-enodl-des-03";
 
+const HDFS_HOME_CREATE_ENABLED = (process.env.SYNC_HDFS_HOME_CREATE_ENABLED ?? "1") === "1";
+const HDFS_HOST = process.env.SYNC_HDFS_HOST ?? AMBARI_HOST;
+const HDFS_COMMAND_PREFIX =
+  process.env.SYNC_HDFS_COMMAND_PREFIX ?? "sudo -n -u hdfs hdfs dfs";
+
 const AMBARI_ADMIN_USER = process.env.SYNC_AMBARI_ADMIN_USER;
 const AMBARI_ADMIN_PASSWORD = process.env.SYNC_AMBARI_ADMIN_PASSWORD;
 
@@ -163,6 +230,46 @@ function hasCommand(cmd) {
 
 function shQuote(arg) {
   return `'${String(arg ?? "").replaceAll("'", `'\\''`)}'`;
+}
+
+function sanitizeUsername(username) {
+  const u = String(username ?? "").trim();
+  if (!u) return null;
+  // We only accept a conservative character set since we build shell paths.
+  if (!/^[a-zA-Z0-9._-]+$/.test(u)) return null;
+  return u;
+}
+
+async function checkHostSsh(label, host) {
+  try {
+    await runSsh(host, "sh -lc 'echo OK'");
+    logOk("check", "ok: ssh reachable", { cycleId, label, host, user: SSH_USER });
+    return true;
+  } catch (err) {
+    logError("check", "fail: ssh unreachable", err, { cycleId, label, host, user: SSH_USER });
+    return false;
+  }
+}
+
+async function checkHdfsPermissions() {
+  try {
+    const cmd = `sh -lc ${shQuote(`cd /tmp && ${HDFS_COMMAND_PREFIX} -test -d /user && echo OK`)}`;
+    const res = await runSsh(HDFS_HOST, cmd);
+    const out = String(res.stdout ?? "").trim();
+    if (out.includes("OK")) {
+      logOk("check", "ok: hdfs permissions (can read /user)", { cycleId, host: HDFS_HOST });
+      return true;
+    }
+    logInfo("check", "warn: hdfs permission check returned unexpected output", {
+      cycleId,
+      host: HDFS_HOST,
+      stdout: out.slice(0, 200),
+    });
+    return true;
+  } catch (err) {
+    logError("check", "fail: hdfs permission check", err, { cycleId, host: HDFS_HOST, HDFS_COMMAND_PREFIX });
+    return false;
+  }
 }
 
 async function runSsh(host, command) {
@@ -353,8 +460,9 @@ async function runOnce(client) {
   const shouldAmbari = dirtyAmbari === "1";
   const shouldRanger = dirtyRanger === "1";
   const shouldHue = dirtyHue === "1";
+  const shouldAnySync = shouldAmbari || shouldRanger || shouldHue;
 
-  if (shouldAmbari || shouldRanger || shouldHue) {
+  if (shouldAnySync) {
     cycleId += 1;
     logInfo("worker", "processing dirty flags", {
       cycleId,
@@ -364,7 +472,7 @@ async function runOnce(client) {
     });
   }
 
-  if (!shouldAmbari && !shouldRanger && !shouldHue) {
+  if (!shouldAnySync) {
     logDebug("worker", "no dirty flags; idle", { cycleId });
     return;
   }
@@ -517,6 +625,7 @@ async function runOnce(client) {
 
         await client.del(KEY_DIRTY_HUE);
         await client.del(KEY_HUE_DIRTY_GROUPS);
+
         hueOk = true;
         logOk("hue", "SYNC OK", { cycleId, groupCount: uniqueGroups.length });
       }
@@ -524,6 +633,45 @@ async function runOnce(client) {
       hueOk = false;
       logError("hue", "SYNC FAILED", e, { cycleId });
     }
+  }
+
+  // Ensure missing HDFS /user/<username> homes once per sync cycle, regardless of which service was synced.
+  if (HDFS_HOME_CREATE_ENABLED) {
+    try {
+      const users = await fetchHueExternalUsers();
+      logInfo("hdfs", "starting: ensure HDFS home directories for Hue external users", {
+        cycleId,
+        host: HDFS_HOST,
+        userCount: users.length,
+      });
+
+      let createdCount = 0;
+      let ensuredCount = 0;
+      let skippedCount = 0;
+      for (const username of users) {
+        try {
+          const r = await ensureHdfsHomeDir(username);
+          if (r.ensured) ensuredCount += 1;
+          else skippedCount += 1;
+          if (r.created) createdCount += 1;
+        } catch (err) {
+          logError("hdfs", "ensure home failed (ignored)", err, { cycleId, host: HDFS_HOST, username });
+        }
+      }
+
+      logOk("hdfs", "completed: ensure HDFS home directories", {
+        cycleId,
+        host: HDFS_HOST,
+        userCount: users.length,
+        ensuredCount,
+        skippedCount,
+        createdCount,
+      });
+    } catch (err) {
+      logError("hdfs", "home dir ensure failed (ignored)", err, { cycleId, host: HDFS_HOST });
+    }
+  } else {
+    logDebug("hdfs", "skip: HDFS home directory auto-create disabled", { cycleId, enabled: HDFS_HOME_CREATE_ENABLED });
   }
 
   if (ambariOk && rangerOk && hueOk) {
@@ -557,6 +705,46 @@ async function main() {
     POLL_SECONDS,
     RETRY_SECONDS,
   });
+
+  logInfo("worker", "config", {
+    POLL_SECONDS,
+    RETRY_SECONDS,
+    REDIS_URL,
+    ssh: {
+      user: SSH_USER,
+      keyPath: SSH_KEY_PATH,
+    },
+    hosts: {
+      ambari: AMBARI_HOST,
+      ranger: RANGER_HOST,
+      hue: HUE_HOST,
+      hdfs: HDFS_HOST,
+    },
+    commands: {
+      ambari: AMBARI_COMMAND,
+      rangerRestart: RANGER_RESTART_COMMAND,
+      huePrefix: HUE_COMMAND_PREFIX,
+      hdfsPrefix: HDFS_COMMAND_PREFIX,
+    },
+    hueSuperuser: {
+      enabled: HUE_SUPERUSER_RECONCILE_ENABLED,
+      group: HUE_SUPERUSER_GROUP,
+    },
+    hdfsHomeEnsure: {
+      enabled: HDFS_HOME_CREATE_ENABLED,
+      host: HDFS_HOST,
+      prefix: HDFS_COMMAND_PREFIX,
+    },
+  });
+
+  await checkHostSsh("ambari", AMBARI_HOST);
+  await checkHostSsh("ranger", RANGER_HOST);
+  await checkHostSsh("hue", HUE_HOST);
+  await checkHostSsh("hdfs", HDFS_HOST);
+
+  if (HDFS_HOME_CREATE_ENABLED) {
+    await checkHdfsPermissions();
+  }
 
   // eslint-disable-next-line no-constant-condition
   while (true) {

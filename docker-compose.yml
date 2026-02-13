@@ -176,7 +176,7 @@ services:
       - ./knox/conf/gateway-site.xml:/opt/knox-1.6.1/conf/gateway-site.xml:ro
       - ./knox/conf/krb5.conf:/opt/knox-1.6.1/conf/krb5.conf:ro
       - ./knox/conf/krb5JAASLogin.conf:/opt/knox-1.6.1/conf/krb5JAASLogin.conf:ro
-      - ./knox/data/security:/opt/knox-1.6.1/data/security
+      - ./knox/data/security:/opt/knox-1.6.1/data/security:Z
     extra_hosts:
       - "host.docker.internal:host-gateway"
       - "srv-enodl-des-03.larioja.org:host-gateway"
@@ -231,6 +231,10 @@ services:
       SYNC_AMBARI_HOST: "172.16.99.230"
       SYNC_RANGER_HOST: "172.16.99.251"
       SYNC_HUE_HOST: "192.168.1.3"
+
+      SYNC_HDFS_HOME_CREATE_ENABLED: "1"
+      SYNC_HDFS_HOST: "172.16.99.230"
+      SYNC_HDFS_COMMAND_PREFIX: "sudo -n -u hdfs /bin/hdfs dfs"
 
       SYNC_KEY_DIRTY_HUE: "sync:dirty:hue"
       SYNC_KEY_HUE_DIRTY_GROUPS: "sync:hue:groups"
@@ -295,17 +299,23 @@ services:
     image: quay.io/keycloak/keycloak:24.0.5
     hostname: keycloak
     container_name: keycloak
+    user: "0"
+    entrypoint: ["/bin/sh", "-c"]
     command:
-      - start
-      - --https-port=8443
-      - --https-certificate-file=/opt/keycloak/conf/cert.pem
-      - --https-certificate-key-file=/opt/keycloak/conf/key.pem
-      - --hostname=srv-enodl-des-03.larioja.org
-      - --hostname-strict=false
-      - --http-enabled=true
-      - --http-port=8080
-      - --proxy=edge
-      - --log-level=INFO
+      - >
+        set -e;
+        mkdir -p /opt/keycloak/data/h2;
+        chown -R 1000:0 /opt/keycloak/data;
+        exec /opt/keycloak/bin/kc.sh start \
+          --https-port=8443 \
+          --https-certificate-file=/opt/keycloak/conf/cert.pem \
+          --https-certificate-key-file=/opt/keycloak/conf/key.pem \
+          --hostname=srv-enodl-des-03.larioja.org \
+          --hostname-strict=false \
+          --http-enabled=true \
+          --http-port=8080 \
+          --proxy=edge \
+          --log-level=INFO
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin

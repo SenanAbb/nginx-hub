@@ -19,6 +19,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -63,6 +70,21 @@ export function UserTable({ users, groups, onEdit, onDelete }: UserTableProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [userToDelete, setUserToDelete] = useState<LDAPUser | null>(null)
 
+  const groupService = (cnValue: string): "ambari" | "ranger" | "hue" | "other" => {
+    const cn = (cnValue || "").toLowerCase()
+    if (cn.startsWith("ambari_")) return "ambari"
+    if (cn.startsWith("ranger_")) return "ranger"
+    if (cn.startsWith("hue") || cn.startsWith("hue_")) return "hue"
+    return "other"
+  }
+
+  const serviceLabel: Record<ReturnType<typeof groupService>, string> = {
+    ambari: "Ambari",
+    ranger: "Ranger",
+    hue: "Hue",
+    other: "Otros",
+  }
+
   const groupByDn = useMemo(() => {
     const map = new Map<string, LDAPGroup>()
     for (const g of groups) map.set(g.dn, g)
@@ -72,6 +94,12 @@ export function UserTable({ users, groups, onEdit, onDelete }: UserTableProps) {
   const getGroupName = (groupDn: string) => {
     const group = groupByDn.get(groupDn)
     return group?.cn || groupDn.split(",")[0].replace("cn=", "")
+  }
+
+  const getGroupService = (groupDn: string) => {
+    const group = groupByDn.get(groupDn)
+    const cn = group?.cn || groupDn.split(",")[0].replace("cn=", "")
+    return groupService(cn)
   }
 
   const handleDeleteClick = (user: LDAPUser) => {
@@ -115,18 +143,55 @@ export function UserTable({ users, groups, onEdit, onDelete }: UserTableProps) {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    {(user.memberOf ?? []).slice(0, 2).map((groupDn) => (
-                      <Badge key={groupDn} variant="outline" className="text-xs">
-                        {getGroupName(groupDn)}
-                      </Badge>
-                    ))}
-                    {(user.memberOf ?? []).length > 2 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{(user.memberOf ?? []).length - 2}
-                      </Badge>
-                    )}
-                  </div>
+                  {(user.memberOf ?? []).length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {([
+                        "ambari",
+                        "ranger",
+                        "hue",
+                        "other",
+                      ] as const).map((svc) => {
+                        const dns = (user.memberOf ?? []).filter((dn) => getGroupService(dn) === svc)
+                        if (dns.length === 0) return null
+                        return (
+                          <Dialog key={svc}>
+                            <DialogTrigger asChild>
+                              <Badge 
+                                variant="secondary" 
+                                className="cursor-pointer hover:bg-secondary/80"
+                              >
+                                {serviceLabel[svc]} ({dns.length})
+                              </Badge>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Grupos de {serviceLabel[svc]}</DialogTitle>
+                              </DialogHeader>
+                              <div className="mt-4 max-h-[60vh] overflow-y-auto">
+                                <div className="grid gap-2">
+                                  {dns
+                                    .sort((a, b) => getGroupName(a).localeCompare(getGroupName(b)))
+                                    .map((groupDn) => (
+                                      <div 
+                                        key={groupDn} 
+                                        className="flex items-center justify-between rounded-md border p-2"
+                                      >
+                                        <span className="text-sm font-medium">
+                                          {getGroupName(groupDn)}
+                                        </span>
+                                      </div>
+                                    ))
+                                  }
+                                </div>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">—</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>

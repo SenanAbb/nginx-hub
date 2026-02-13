@@ -1,0 +1,229 @@
+:root {
+    --enodl-primary: #4d7c0f;
+    --enodl-primary-dark: #365314;
+    --enodl-primary-light: #ecfccb;
+    --enodl-bg: #f8fafc;
+    --enodl-surface: #ffffff;
+    --enodl-border: #e2e8f0;
+    --enodl-text: #0f172a;
+    --enodl-muted: #64748b;
+    --enodl-danger: #ef4444;
+    --enodl-radius: 12px;
+    --enodl-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+html, body {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--enodl-bg);
+    color: var(--enodl-text);
+}
+
+.enodl-page {
+    min-height: calc(100vh - 48px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.enodl-card {
+    width: 100%;
+    max-width: 440px;
+    background: var(--enodl-surface);
+    border: 1px solid var(--enodl-border);
+    border-radius: var(--enodl-radius);
+    padding: 28px;
+    box-shadow: var(--enodl-shadow);
+}
+
+.enodl-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 24px;
+    margin-bottom: 12px;
+}
+
+.enodl-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--enodl-primary), var(--enodl-primary-dark));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: white;
+    letter-spacing: .02em;
+    font-size: 1.25rem;
+}
+
+.enodl-title {
+    font-weight: 700;
+    color: var(--enodl-text);
+    font-size: 1rem;
+    line-height: 1.2;
+}
+
+.enodl-h1 {
+    margin: 0 0 6px 0;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -.02em;
+    color: var(--enodl-text);
+}
+
+.enodl-subtitle {
+    margin: 0 0 24px 0;
+    color: var(--enodl-muted);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.enodl-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.enodl-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--enodl-text);
+}
+
+.enodl-input {
+    height: 42px;
+    padding: 0 12px;
+    border: 1px solid var(--enodl-border);
+    border-radius: 8px;
+    background: white;
+    outline: none;
+    transition: all 0.2s;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--enodl-text);
+}
+
+.enodl-input:focus {
+    border-color: var(--enodl-primary);
+    box-shadow: 0 0 0 3px var(--enodl-primary-light);
+}
+
+.enodl-actions {
+    margin-top: 24px;
+}
+
+.enodl-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 44px;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.enodl-button-primary {
+    background: var(--enodl-primary);
+    color: white;
+}
+
+.enodl-button-primary:hover {
+    background: var(--enodl-primary-dark);
+}
+
+.enodl-button-secondary {
+    background: #1e293b;
+    color: white;
+}
+
+.enodl-button-secondary:hover {
+    background: #0f172a;
+}
+
+.enodl-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 20px 0;
+    color: var(--enodl-muted);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.enodl-divider:before, .enodl-divider:after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--enodl-border);
+}
+
+.enodl-remember {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--enodl-muted);
+    font-size: 13px;
+    margin: 8px 0 14px 0;
+}
+
+.enodl-remember input {
+    accent-color: var(--enodl-primary);
+    width: 16px;
+    height: 16px;
+    margin: 0;
+}
+
+.enodl-links {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.enodl-links a {
+    color: var(--enodl-primary);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 13px;
+}
+
+.enodl-links a:hover {
+    text-decoration: underline;
+    color: var(--enodl-primary-dark);
+}
+
+.enodl-alert {
+    margin: 16px 0;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.4;
+    border: 1px solid var(--enodl-border);
+    background: #f1f5f9;
+    color: var(--enodl-text);
+}
+
+.enodl-alert.error {
+    border-color: #fecaca;
+    background: #fef2f2;
+    color: var(--enodl-danger);
+}
+
+.enodl-error {
+    color: var(--enodl-danger);
+    font-size: 12px;
+    margin-top: 4px;
+}

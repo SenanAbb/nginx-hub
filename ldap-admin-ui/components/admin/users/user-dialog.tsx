@@ -37,6 +37,7 @@ export function UserDialog({
   onSave,
 }: UserDialogProps) {
   const [password, setPassword] = useState("");
+  const [groupSearch, setGroupSearch] = useState("");
   const [formData, setFormData] = useState<Partial<LDAPUser>>({
     uid: "",
     cn: "",
@@ -78,13 +79,37 @@ export function UserDialog({
       });
     }
     setPassword("");
+    setGroupSearch("");
   }, [user, open]);
+
+  const groupService = (cnValue: string): "ambari" | "ranger" | "hue" | "other" => {
+    const cn = (cnValue || "").toLowerCase();
+    if (cn.startsWith("ambari_")) return "ambari";
+    if (cn.startsWith("ranger_")) return "ranger";
+    if (cn.startsWith("hue") || cn.startsWith("hue_")) return "hue";
+    return "other";
+  };
+
+  const serviceLabel: Record<ReturnType<typeof groupService>, string> = {
+    ambari: "Ambari",
+    ranger: "Ranger",
+    hue: "Hue",
+    other: "Otros",
+  };
+
+  const serviceOrder: Array<ReturnType<typeof groupService>> = ["ambari", "ranger", "hue", "other"];
 
   const groupByDn = useMemo(() => {
     const map = new Map<string, LDAPGroup>();
     for (const g of groups) map.set(g.dn, g);
     return map;
   }, [groups]);
+
+  const getGroupService = (groupDn: string) => {
+    const group = groupByDn.get(groupDn);
+    const cn = group?.cn || groupDn.split(",")[0].replace("cn=", "");
+    return groupService(cn);
+  };
 
   const handleInputChange = (
     field: keyof LDAPUser,
@@ -141,6 +166,48 @@ export function UserDialog({
     const group = groupByDn.get(groupDn);
     return group?.cn || groupDn.split(",")[0].replace("cn=", "");
   };
+
+  const filteredGroups = useMemo(() => {
+    const q = groupSearch.trim().toLowerCase();
+    if (!q) return groups;
+    return groups.filter((g) => {
+      const cn = (g.cn || "").toLowerCase();
+      const desc = (g.description || "").toLowerCase();
+      return cn.includes(q) || desc.includes(q);
+    });
+  }, [groups, groupSearch]);
+
+  const filteredGroupsByService = useMemo(() => {
+    const out: Record<ReturnType<typeof groupService>, LDAPGroup[]> = {
+      ambari: [],
+      ranger: [],
+      hue: [],
+      other: [],
+    };
+    for (const g of filteredGroups) {
+      out[groupService(g.cn)].push(g);
+    }
+    for (const k of Object.keys(out) as Array<keyof typeof out>) {
+      out[k].sort((a, b) => a.cn.localeCompare(b.cn));
+    }
+    return out;
+  }, [filteredGroups]);
+
+  const assignedDnsByService = useMemo(() => {
+    const out: Record<ReturnType<typeof groupService>, string[]> = {
+      ambari: [],
+      ranger: [],
+      hue: [],
+      other: [],
+    };
+    for (const dn of (formData.memberOf || []) as string[]) {
+      out[getGroupService(dn)].push(dn);
+    }
+    for (const k of Object.keys(out) as Array<keyof typeof out>) {
+      out[k].sort((a, b) => getGroupName(a).localeCompare(getGroupName(b)));
+    }
+    return out;
+  }, [formData.memberOf, groupByDn]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -238,68 +305,54 @@ export function UserDialog({
             </TabsContent>
 
             <TabsContent value="groups" className="mt-4 space-y-4">
-              <div className="space-y-2">
-                <Label>Grupos asignados</Label>
-                <div className="flex flex-wrap gap-2 rounded-lg border border-border bg-white p-3 min-h-[60px]">
-                  {formData.memberOf && formData.memberOf.length > 0 ? (
-                    formData.memberOf.map((groupDn) => (
-                      <Badge
-                        key={groupDn}
-                        variant="outline"
-                        className="gap-1 pr-1"
-                      >
-                        {getGroupName(groupDn)}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveGroup(groupDn)}
-                          className="ml-1 rounded-full p-0.5 hover:bg-muted"
-                        >
-                          <X className="h-3 w-3" />
-                          <span className="sr-only">Eliminar grupo</span>
-                        </button>
-                      </Badge>
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      No hay grupos asignados
-                    </p>
-                  )}
+            <div className="flex h-[500px] min-h-0 gap-4">
+              {/* Left Column: Available Groups */}
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 rounded-lg border bg-muted/30 p-3 overflow-hidden">
+                <div className="flex items-center justify-between">
+                  <Label className="font-semibold text-foreground">Disponibles</Label>
+                  <span className="text-xs text-muted-foreground">
+                    {filteredGroups.filter(g => !formData.memberOf?.includes(g.dn)).length} grupos
+                  </span>
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Grupos disponibles</Label>
-                <ScrollArea className="h-[280px] rounded-lg border border-border bg-white">
-                  <div className="p-3 space-y-2">
-                    {groups.map((group) => {
-                      const isSelected = formData.memberOf?.includes(group.dn);
+                <Input
+                  value={groupSearch}
+                  onChange={(e) => setGroupSearch(e.target.value)}
+                  placeholder="Buscar..."
+                  className="h-8 bg-white"
+                />
+                <ScrollArea className="min-h-0 flex-1 rounded-md border bg-white">
+                  <div className="p-2 space-y-4">
+                    {serviceOrder.map((svc) => {
+                      const svcGroups = filteredGroupsByService[svc].filter(
+                        (g) => !formData.memberOf?.includes(g.dn)
+                      );
+                      if (svcGroups.length === 0) return null;
+                      
                       return (
-                        <div
-                          key={group.dn}
-                          className="flex items-start gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted"
-                        >
-                          <Checkbox
-                            id={group.dn}
-                            checked={isSelected}
-                            onCheckedChange={(checked: any) =>
-                              handleGroupToggle(group.dn, checked as boolean)
-                            }
-                          />
-                          <div className="flex-1">
-                            <label
-                              htmlFor={group.dn}
-                              className="cursor-pointer font-medium text-foreground"
-                            >
-                              {group.cn}
-                            </label>
-                            {group.description && (
-                              <p className="text-sm text-muted-foreground">
-                                {group.description}
-                              </p>
-                            )}
-                            <p className="text-xs text-muted-foreground">
-                              {group.members.length} miembro(s)
-                            </p>
+                        <div key={svc}>
+                          <div className="sticky top-0 z-10 bg-white pb-2 pt-1">
+                            <h4 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
+                              {serviceLabel[svc]}
+                            </h4>
+                          </div>
+                          <div className="grid gap-2">
+                            {svcGroups.map((group) => (
+                              <div
+                                key={group.dn}
+                                className="flex cursor-pointer items-center justify-between rounded-md border p-2 hover:bg-accent hover:text-accent-foreground group"
+                                onClick={() => handleGroupToggle(group.dn, true)}
+                              >
+                                <div className="overflow-hidden">
+                                  <p className="truncate text-sm font-medium">{group.cn}</p>
+                                  {group.description && (
+                                    <p className="truncate text-xs text-muted-foreground">{group.description}</p>
+                                  )}
+                                </div>
+                                <Button size="icon" variant="ghost" className="h-6 w-6 opacity-0 group-hover:opacity-100">
+                                  <span className="text-lg">+</span>
+                                </Button>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       );
@@ -307,7 +360,63 @@ export function UserDialog({
                   </div>
                 </ScrollArea>
               </div>
-            </TabsContent>
+
+              {/* Right Column: Assigned Groups */}
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 rounded-lg border bg-muted/30 p-3 overflow-hidden">
+                <div className="flex items-center justify-between">
+                  <Label className="font-semibold text-foreground">Asignados</Label>
+                  <span className="text-xs text-muted-foreground">
+                    {formData.memberOf?.length || 0} grupos
+                  </span>
+                </div>
+                
+                <ScrollArea className="min-h-0 flex-1 rounded-md border bg-white">
+                  <div className="p-2 space-y-4">
+                    {formData.memberOf && formData.memberOf.length > 0 ? (
+                      serviceOrder.map((svc) => {
+                        const dns = assignedDnsByService[svc];
+                        if (dns.length === 0) return null;
+
+                        return (
+                          <div key={svc}>
+                            <div className="sticky top-0 z-10 bg-white pb-2 pt-1">
+                              <h4 className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
+                                {serviceLabel[svc]}
+                              </h4>
+                            </div>
+                            <div className="grid gap-2">
+                              {dns.map((groupDn) => (
+                                <div
+                                  key={groupDn}
+                                  className="flex items-center justify-between rounded-md border p-2 bg-secondary/20"
+                                >
+                                  <span className="truncate text-sm font-medium">
+                                    {getGroupName(groupDn)}
+                                  </span>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                    onClick={() => handleRemoveGroup(groupDn)}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="flex h-full flex-col items-center justify-center p-4 text-center text-sm text-muted-foreground opacity-50">
+                        <p>No hay grupos seleccionados</p>
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+              </div>
+            </div>
+          </TabsContent>
           </Tabs>
 
           <DialogFooter className="mt-6">
