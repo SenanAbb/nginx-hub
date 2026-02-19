@@ -28,6 +28,10 @@ export function GroupCard({ group, users, viewMode }: GroupCardProps) {
     if (cnValue.startsWith("ambari_")) return "Ambari"
     if (cnValue.startsWith("ranger_")) return "Ranger"
     if (cnValue.startsWith("hue") || cnValue.startsWith("hue_")) return "Hue"
+    if (cnValue.startsWith("zeppelin_")) return "Zeppelin"
+    if (cnValue.startsWith("grafana_")) return "Grafana"
+    if (cnValue.startsWith("openmd_")) return "OpenMD"
+    if (cnValue.startsWith("airflow_")) return "Airflow"
     return "Otros"
   })()
 

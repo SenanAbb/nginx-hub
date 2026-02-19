@@ -70,11 +70,17 @@ export function UserTable({ users, groups, onEdit, onDelete }: UserTableProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [userToDelete, setUserToDelete] = useState<LDAPUser | null>(null)
 
-  const groupService = (cnValue: string): "ambari" | "ranger" | "hue" | "other" => {
+  const groupService = (
+    cnValue: string,
+  ): "ambari" | "ranger" | "hue" | "zeppelin" | "grafana" | "openmd" | "airflow" | "other" => {
     const cn = (cnValue || "").toLowerCase()
     if (cn.startsWith("ambari_")) return "ambari"
     if (cn.startsWith("ranger_")) return "ranger"
     if (cn.startsWith("hue") || cn.startsWith("hue_")) return "hue"
+    if (cn.startsWith("zeppelin_")) return "zeppelin"
+    if (cn.startsWith("grafana_")) return "grafana"
+    if (cn.startsWith("openmd_")) return "openmd"
+    if (cn.startsWith("airflow_")) return "airflow"
     return "other"
   }
 
@@ -82,6 +88,10 @@ export function UserTable({ users, groups, onEdit, onDelete }: UserTableProps) {
     ambari: "Ambari",
     ranger: "Ranger",
     hue: "Hue",
+    zeppelin: "Zeppelin",
+    grafana: "Grafana",
+    openmd: "OpenMD",
+    airflow: "Airflow",
     other: "Otros",
   }
 
@@ -149,6 +159,10 @@ export function UserTable({ users, groups, onEdit, onDelete }: UserTableProps) {
                         "ambari",
                         "ranger",
                         "hue",
+                        "zeppelin",
+                        "grafana",
+                        "openmd",
+                        "airflow",
                         "other",
                       ] as const).map((svc) => {
                         const dns = (user.memberOf ?? []).filter((dn) => getGroupService(dn) === svc)
@@ -156,8 +170,8 @@ export function UserTable({ users, groups, onEdit, onDelete }: UserTableProps) {
                         return (
                           <Dialog key={svc}>
                             <DialogTrigger asChild>
-                              <Badge 
-                                variant="secondary" 
+                              <Badge
+                                variant="secondary"
                                 className="cursor-pointer hover:bg-secondary/80"
                               >
                                 {serviceLabel[svc]} ({dns.length})
@@ -172,16 +186,13 @@ export function UserTable({ users, groups, onEdit, onDelete }: UserTableProps) {
                                   {dns
                                     .sort((a, b) => getGroupName(a).localeCompare(getGroupName(b)))
                                     .map((groupDn) => (
-                                      <div 
-                                        key={groupDn} 
+                                      <div
+                                        key={groupDn}
                                         className="flex items-center justify-between rounded-md border p-2"
                                       >
-                                        <span className="text-sm font-medium">
-                                          {getGroupName(groupDn)}
-                                        </span>
+                                        <span className="text-sm font-medium">{getGroupName(groupDn)}</span>
                                       </div>
-                                    ))
-                                  }
+                                    ))}
                                 </div>
                               </div>
                             </DialogContent>

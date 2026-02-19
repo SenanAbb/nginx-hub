@@ -29,13 +29,21 @@ export default function GroupsPage() {
   const [users, setUsers] = useState<LDAPUser[]>([])
   const [groups, setGroups] = useState<LDAPGroup[]>([])
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
-  const [serviceFilter, setServiceFilter] = useState<"all" | "ambari" | "ranger" | "hue" | "other">("all")
+  const [serviceFilter, setServiceFilter] = useState<
+    "all" | "ambari" | "ranger" | "hue" | "zeppelin" | "grafana" | "openmd" | "airflow" | "other"
+  >("all")
 
-  const groupService = (cnValue: string): "ambari" | "ranger" | "hue" | "other" => {
+  const groupService = (
+    cnValue: string,
+  ): "ambari" | "ranger" | "hue" | "zeppelin" | "grafana" | "openmd" | "airflow" | "other" => {
     const cn = (cnValue || "").toLowerCase()
     if (cn.startsWith("ambari_")) return "ambari"
     if (cn.startsWith("ranger_")) return "ranger"
     if (cn.startsWith("hue") || cn.startsWith("hue_")) return "hue"
+    if (cn.startsWith("zeppelin_")) return "zeppelin"
+    if (cn.startsWith("grafana_")) return "grafana"
+    if (cn.startsWith("openmd_")) return "openmd"
+    if (cn.startsWith("airflow_")) return "airflow"
     return "other"
   }
 
@@ -43,10 +51,23 @@ export default function GroupsPage() {
     ambari: "Ambari",
     ranger: "Ranger",
     hue: "Hue",
+    zeppelin: "Zeppelin",
+    grafana: "Grafana",
+    openmd: "OpenMD",
+    airflow: "Airflow",
     other: "Otros",
   }
 
-  const serviceOrder: Array<ReturnType<typeof groupService>> = ["ambari", "ranger", "hue", "other"]
+  const serviceOrder: Array<ReturnType<typeof groupService>> = [
+    "ambari",
+    "ranger",
+    "hue",
+    "zeppelin",
+    "grafana",
+    "openmd",
+    "airflow",
+    "other",
+  ]
 
   const loadData = async () => {
     setLoading(true)
@@ -107,6 +128,10 @@ export default function GroupsPage() {
       ambari: [],
       ranger: [],
       hue: [],
+      zeppelin: [],
+      grafana: [],
+      openmd: [],
+      airflow: [],
       other: [],
     }
     for (const g of filteredGroups) {
@@ -153,6 +178,34 @@ export default function GroupsPage() {
             onClick={() => setServiceFilter("hue")}
           >
             Hue
+          </Button>
+          <Button
+            variant={serviceFilter === "zeppelin" ? "secondary" : "outline"}
+            size="sm"
+            onClick={() => setServiceFilter("zeppelin")}
+          >
+            Zeppelin
+          </Button>
+          <Button
+            variant={serviceFilter === "grafana" ? "secondary" : "outline"}
+            size="sm"
+            onClick={() => setServiceFilter("grafana")}
+          >
+            Grafana
+          </Button>
+          <Button
+            variant={serviceFilter === "openmd" ? "secondary" : "outline"}
+            size="sm"
+            onClick={() => setServiceFilter("openmd")}
+          >
+            OpenMD
+          </Button>
+          <Button
+            variant={serviceFilter === "airflow" ? "secondary" : "outline"}
+            size="sm"
+            onClick={() => setServiceFilter("airflow")}
+          >
+            Airflow
           </Button>
           <Button
             variant={serviceFilter === "other" ? "secondary" : "outline"}

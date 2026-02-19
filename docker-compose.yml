@@ -168,14 +168,9 @@ services:
     image: farberg/apache-knox-docker:1.6.1
     container_name: knox
     hostname: knox
-    environment:
-      JAVA_TOOL_OPTIONS: "-Dgateway.hadoop.kerberos.secured=true"
-      KNOX_GATEWAY_DBG_OPTS: "-Dgateway.hadoop.kerberos.secured=true"
     volumes:
       - ./knox/topologies:/opt/knox-1.6.1/conf/topologies:ro
       - ./knox/conf/gateway-site.xml:/opt/knox-1.6.1/conf/gateway-site.xml:ro
-      - ./knox/conf/krb5.conf:/opt/knox-1.6.1/conf/krb5.conf:ro
-      - ./knox/conf/krb5JAASLogin.conf:/opt/knox-1.6.1/conf/krb5JAASLogin.conf:ro
       - ./knox/data/security:/opt/knox-1.6.1/data/security:Z
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -284,6 +279,7 @@ services:
       - "445:445" # AMBARI
       - "446:446" # RANGER
       - "447:447" # HUE
+      - "448:448" # ZEPPELIN
       - "400:400" # LDAP Admin UI
     extra_hosts:
       - "host.docker.internal:host-gateway"

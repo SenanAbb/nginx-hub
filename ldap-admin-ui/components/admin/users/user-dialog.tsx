@@ -82,11 +82,17 @@ export function UserDialog({
     setGroupSearch("");
   }, [user, open]);
 
-  const groupService = (cnValue: string): "ambari" | "ranger" | "hue" | "other" => {
+  const groupService = (
+    cnValue: string,
+  ): "ambari" | "ranger" | "hue" | "zeppelin" | "grafana" | "openmd" | "airflow" | "other" => {
     const cn = (cnValue || "").toLowerCase();
     if (cn.startsWith("ambari_")) return "ambari";
     if (cn.startsWith("ranger_")) return "ranger";
     if (cn.startsWith("hue") || cn.startsWith("hue_")) return "hue";
+    if (cn.startsWith("zeppelin_")) return "zeppelin";
+    if (cn.startsWith("grafana_")) return "grafana";
+    if (cn.startsWith("openmd_")) return "openmd";
+    if (cn.startsWith("airflow_")) return "airflow";
     return "other";
   };
 
@@ -94,10 +100,23 @@ export function UserDialog({
     ambari: "Ambari",
     ranger: "Ranger",
     hue: "Hue",
+    zeppelin: "Zeppelin",
+    grafana: "Grafana",
+    openmd: "OpenMD",
+    airflow: "Airflow",
     other: "Otros",
   };
 
-  const serviceOrder: Array<ReturnType<typeof groupService>> = ["ambari", "ranger", "hue", "other"];
+  const serviceOrder: Array<ReturnType<typeof groupService>> = [
+    "ambari",
+    "ranger",
+    "hue",
+    "zeppelin",
+    "grafana",
+    "openmd",
+    "airflow",
+    "other",
+  ];
 
   const groupByDn = useMemo(() => {
     const map = new Map<string, LDAPGroup>();
@@ -182,6 +201,10 @@ export function UserDialog({
       ambari: [],
       ranger: [],
       hue: [],
+      zeppelin: [],
+      grafana: [],
+      openmd: [],
+      airflow: [],
       other: [],
     };
     for (const g of filteredGroups) {
@@ -198,6 +221,10 @@ export function UserDialog({
       ambari: [],
       ranger: [],
       hue: [],
+      zeppelin: [],
+      grafana: [],
+      openmd: [],
+      airflow: [],
       other: [],
     };
     for (const dn of (formData.memberOf || []) as string[]) {

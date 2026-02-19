@@ -21,6 +21,10 @@
                 <name>pac4j.callbackUrl</name>
                 <value>https://srv-enodl-des-03.larioja.org:444/knoxsso/api/v1/websso</value>
             </param>
+            <param>
+                <name>pac4j.session.store</name>
+                <value>JEESessionStore</value>
+            </param>
             <!-- Tipo de cliente pac4j -->
             <param>
                 <name>clientName</name>
@@ -47,6 +51,14 @@
             <param>
                 <name>pac4j.id_attribute</name>
                 <value>preferred_username</value>
+            </param>
+            <param>
+                <name>pac4j.cookie.domain.suffix</name>
+                <value>.larioja.org</value>
+            </param>
+            <param>
+                <name>pac4j.cookie.samesite</name>
+                <value>None</value>
             </param>
             <param>
                 <name>oidc.scope</name>
@@ -111,7 +123,7 @@
     </param>
     <param>
         <name>knoxsso.redirect.whitelist.regex</name>
-        <value>^https:\/\/srv-enodl-des-03\.larioja\.org(:444|:445|:446|:447)?\/.*$</value>
+        <value>^https:\/\/srv-enodl-des-03\.larioja\.org(:444|:445|:446|:447|:448)?\/.*$</value>
     </param>
 </service>
 </topology>

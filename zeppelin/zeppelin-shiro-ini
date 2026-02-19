@@ -1,0 +1,52 @@
+[users]
+admin = $shiro1$SHA-256$500000$p6Be9+t2hdUXJQj2D0b1fg==$bea5JIMqcVF3J6eNZGWQ/3eeDByn5iEZDuGsEip06+M=, admin
+user1 = $shiro1$SHA-256$500000$G2ymy/qmuZnGY6or4v2KfA==$v9fabqWgCNCgechtOUqAQenGDs0OSLP28q2wolPT4wU=, role1, role2
+user2 = $shiro1$SHA-256$500000$aHBgiuwSgAcP3Xt5mEzeFw==$KosBnN2BNKA9/KHBL0hnU/woJFl+xzJFj12NQ0fnjCU=, role3
+user3 = $shiro1$SHA-256$500000$nf0GzH10GbYVoxa7DOlOSw==$ov/IA5W8mRWPwvAoBjNYxg3udJK0EmrVMvFCwcr9eAs=, role2
+
+[main]
+passwordMatcher = org.apache.shiro.authc.credential.PasswordMatcher
+iniRealm.credentialsMatcher = $passwordMatcher
+
+sessionManager = org.apache.shiro.web.session.mgt.DefaultWebSessionManager
+cacheManager = org.apache.shiro.cache.MemoryConstrainedCacheManager
+securityManager.cacheManager = $cacheManager
+authenticationStrategy = org.apache.shiro.authc.pam.FirstSuccessfulStrategy
+securityManager.authenticator.authenticationStrategy = $authenticationStrategy
+
+cookie = org.apache.shiro.web.servlet.SimpleCookie
+cookie.name = ZEPPELIN_SHIRO_SESSION
+cookie.httpOnly = true
+cookie.secure = true
+sessionManager.sessionIdCookie = $cookie
+securityManager.sessionManager = $sessionManager
+securityManager.sessionManager.globalSessionTimeout = 86400000
+shiro.loginUrl = /api/login
+
+# --- Knox SSO ---
+knoxJwtRealm = org.apache.zeppelin.realm.jwt.KnoxJwtRealm
+knoxJwtRealm.providerUrl = https://srv-enodl-des-03.larioja.org:444/
+knoxJwtRealm.login = /knoxsso/api/v1/websso
+knoxJwtRealm.logout = /knoxssout/api/v1/webssout
+knoxJwtRealm.redirectParam = originalUrl
+knoxJwtRealm.publicKeyPath = /etc/zeppelin/conf/knox-sso.pem
+knoxJwtRealm.cookieName = hadoop-jwt
+
+# Este filtro se encarga de redirigir al login de KnoxSSO cuando no hay cookie hadoop-jwt
+authc = org.apache.zeppelin.realm.jwt.KnoxAuthenticationFilter
+authc.loginUrl = /api/login
+
+securityManager.realms = $knoxJwtRealm
+
+[roles]
+role1 = *
+role2 = *
+role3 = *
+admin = *
+zeppelin_admin = *
+zeppelin_user = *
+
+[urls]
+/api/version = anon
+/api/login = anon
+/** = authc
